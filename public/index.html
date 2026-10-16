@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Insta Downloader</title>
+    <style>
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: "Segoe UI", sans-serif;
+        background: linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045);
+      }
+      .card {
+        width: 100%;
+        max-width: 480px;
+        padding: 32px;
+        border-radius: 16px;
+        background: #fff;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+        text-align: center;
+      }
+      h1 { margin-top: 0; color: #333; font-size: 22px; }
+      input {
+        width: 100%;
+        margin-bottom: 12px;
+        padding: 12px 14px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        font-size: 15px;
+      }
+      button {
+        width: 100%;
+        padding: 12px;
+        border: 0;
+        border-radius: 8px;
+        background: #fd1d1d;
+        color: #fff;
+        font-size: 15px;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      button:hover { background: #d4160f; }
+      button:disabled { background: #ccc; cursor: not-allowed; }
+      #result { margin-top: 20px; }
+      #result img, #result video {
+        max-width: 100%;
+        margin-bottom: 12px;
+        border-radius: 10px;
+      }
+      .download-btn {
+        display: inline-block;
+        padding: 10px 20px;
+        border-radius: 8px;
+        background: #1db954;
+        color: #fff;
+        font-weight: bold;
+        text-decoration: none;
+      }
+      .error {
+        margin-top: 12px;
+        color: #d4160f;
+        font-size: 14px;
+        line-height: 1.5;
+        overflow-wrap: anywhere;
+      }
+      .loading { margin-top: 10px; color: #666; font-size: 14px; }
+      .setup {
+        margin-top: 16px;
+        padding: 12px;
+        border-radius: 8px;
+        background: #fff4e5;
+        color: #653f00;
+        font-size: 13px;
+        line-height: 1.5;
+        text-align: left;
+      }
+      .setup a { color: #8a2700; font-weight: 600; }
+      @media (max-width: 420px) {
+        body { padding: 12px; }
+        .card { padding: 22px; }
+        h1 { font-size: clamp(17px, 5vw, 21px); }
+        .error { text-align: left; }
+      }
+      @media (max-width: 300px) {
+        body { padding: 8px; }
+        .card { padding: 14px; }
+        h1 { font-size: 17px; }
+        button { padding: 11px 8px; font-size: 14px; }
+        .error, .loading { font-size: 13px; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="card">
+      <h1>📥 Instagram Downloader</h1>
+      <input
+        id="urlInput"
+        type="url"
+        placeholder="Paste Instagram post/reel link here"
+        aria-label="Instagram post or reel link"
+      >
+      <button id="fetchBtn" type="button">Get Download Link</button>
+      <div id="result" aria-live="polite"></div>
+      <div id="setup" class="setup" hidden>
+        <strong>One-time setup needed</strong>
+        <p>This app uses Apify to retrieve public posts and Reels. Create an
+          <a href="https://console.apify.com/sign-up" target="_blank" rel="noopener noreferrer">Apify account</a>,
+          copy your API token from
+          <a href="https://console.apify.com/account/integrations" target="_blank" rel="noopener noreferrer">Apify settings</a>,
+          then set it as <code>APIFY_TOKEN</code> on the server. Follow the setup steps in the project README.
+          The token must stay on the server; never paste it into this page or commit it to GitHub.
+        </p>
+        <p>Apify’s free plan includes monthly usage credits; this app caps each request at $0.50. Check your usage before testing repeatedly.</p>
+      </div>
+    </main>
+
+    <script>
+      const fetchBtn = document.getElementById('fetchBtn');
+      const urlInput = document.getElementById('urlInput');
+      const result = document.getElementById('result');
+      const setup = document.getElementById('setup');
+
+      function showMessage(message, className) {
+        result.replaceChildren();
+        const element = document.createElement('div');
+        element.className = className;
+        element.textContent = message;
+        result.append(element);
+      }
+
+      fetch('/api/status')
+        .then((response) => {
+          if (!response.ok) throw new Error('Could not load service status.');
+          return response.json();
+        })
+        .then((status) => {
+          setup.hidden = status.configured;
+        })
+        .catch((error) => {
+          console.error(error);
+        });
+
+      fetchBtn.addEventListener('click', async () => {
+        const url = urlInput.value.trim();
+        result.replaceChildren();
+        if (!url) {
+          showMessage('Please paste a link first.', 'error');
+          return;
+        }
+
+        fetchBtn.disabled = true;
+        fetchBtn.textContent = 'Fetching...';
+        showMessage('Processing link, please wait...', 'loading');
+
+        try {
+          const response = await fetch('/api/fetch', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url })
+          });
+          const data = await response.json();
+
+          if (!response.ok) {
+            if (response.status === 503 && data.error.includes('APIFY_TOKEN')) {
+              setup.hidden = false;
+            }
+            showMessage(data.error || 'Could not process that link.', 'error');
+            return;
+          }
+
+          const media = document.createElement(data.type === 'video' ? 'video' : 'img');
+          media.src = data.url;
+          if (data.type === 'video') {
+            media.controls = true;
+          } else {
+            media.alt = 'Instagram post preview';
+          }
+
+          const downloadLink = document.createElement('a');
+          const downloadUrl = new URL('/api/download', window.location.origin);
+          downloadUrl.searchParams.set('url', data.url);
+          downloadUrl.searchParams.set('type', data.type);
+          downloadLink.href = downloadUrl.toString();
+          downloadLink.className = 'download-btn';
+          downloadLink.textContent = data.type === 'video' ? '⬇ Download Video' : '⬇ Download Image';
+
+          result.replaceChildren(media, document.createElement('br'), downloadLink);
+        } catch (err) {
+          showMessage('Something went wrong. Try again.', 'error');
+        } finally {
+          fetchBtn.disabled = false;
+          fetchBtn.textContent = 'Get Download Link';
+        }
+      });
+    </script>
+  </body>
+</html>
