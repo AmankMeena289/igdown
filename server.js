@@ -14,6 +14,7 @@ const INSTAGRAM_HOSTS = new Set(['instagram.com', 'www.instagram.com']);
 const APIFY_ACTOR_URL =
   'https://api.apify.com/v2/acts/apify~instagram-scraper/run-sync-get-dataset-items';
 
+app.set('trust proxy', 1);
 app.use(cors());
 app.use(express.json({ limit: '10kb' }));
 app.use(express.static(path.join(__dirname, 'public')));
