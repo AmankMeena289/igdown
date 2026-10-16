@@ -35,11 +35,20 @@ A small Express app that retrieves image or video media from public Instagram po
 
 The included [`render.yaml`](./render.yaml) configures a free Render web service and asks Render to enter the API token privately during setup.
 
-1. Push this project to a GitHub repository. Do not commit `.env`; it is ignored by Git.
-2. Create a [Render account](https://dashboard.render.com/register) and choose **New → Blueprint**.
-3. Connect the GitHub repository and follow the Blueprint setup. When prompted for `APIFY_TOKEN`, paste the token from Apify. It is stored as a Render secret; do not put it in GitHub.
-4. Wait for the deploy to finish, then open the `onrender.com` URL Render shows for the service.
-5. On your phone, open that URL in Safari or Chrome. Use the browser's **Add to Home Screen** option to make it easy to reopen.
+1. Create a **private** repository on [GitHub](https://github.com/new). Do not initialize it with a README, license, or `.gitignore`.
+2. In PowerShell, upload this project's commit (replace `YOUR-USERNAME` with your GitHub username):
+
+   ```powershell
+   cd C:\Users\pc\Desktop\igdown
+   git remote add origin https://github.com/YOUR-USERNAME/insta-downloader.git
+   git push -u origin main
+   ```
+
+   GitHub may ask you to sign in. `.env` is excluded and is not in the commit.
+3. Create a [Render account](https://dashboard.render.com/register) and choose **New → Blueprint**.
+4. Connect the private GitHub repository and follow the Blueprint setup. When prompted for `APIFY_TOKEN`, paste the token from Apify. It is stored as a Render secret; do not put it in GitHub.
+5. Wait for the deploy to finish, then open the `onrender.com` URL Render shows for the service.
+6. On your phone, open that URL in Safari or Chrome. Use the browser's **Add to Home Screen** option to make it easy to reopen.
 
 Render's free web services sleep after 15 minutes without traffic and can take about a minute to wake when opened. If you need it to respond immediately at all times, choose a paid always-on service plan in Render. Deploying also makes the service public on the internet; keep the Apify token secret and only share the site with people you trust.
 
@@ -47,6 +56,6 @@ If using a different Node.js host, set the build command to `npm install`, the s
 
 ## Limitations
 
-The app sends submitted Instagram URLs to [Apify's Instagram Scraper](https://apify.com/apify/instagram-scraper), a third-party service. Apify requires an account and API token. Its free plan includes monthly platform credits, and the scraper charges per result; each request from this app is capped at $0.50, but repeated use can consume credits. Check Apify's [current pricing](https://apify.com/pricing) before use. Do not submit private links or links you do not want to share with Apify. Private posts, rate limits, and changes to Instagram's page format may still prevent extraction.
+The app sends submitted Instagram URLs to [Apify's Instagram Scraper](https://apify.com/apify/instagram-scraper), a third-party service. Apify requires an account and API token. Its free plan includes monthly platform credits, and the scraper charges per result; each request from this app is capped at $0.50, but repeated use can consume credits. The API is limited to five lookups per 15 minutes per client IP. Check Apify's [current pricing](https://apify.com/pricing) before use. Do not submit private links or links you do not want to share with Apify. Private posts, rate limits, and changes to Instagram's page format may still prevent extraction.
 
 The local `.env` file is excluded from Git so the API token is not committed. For hosted deployment, set `APIFY_TOKEN` in the hosting provider's environment-variable settings instead of uploading `.env`.

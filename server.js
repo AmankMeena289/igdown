@@ -1,6 +1,7 @@
 require('dotenv').config();
 
 const express = require('express');
+const { rateLimit } = require('express-rate-limit');
 const fetch = require('node-fetch');
 const cors = require('cors');
 const path = require('path');
@@ -16,6 +17,17 @@ const APIFY_ACTOR_URL =
 app.use(cors());
 app.use(express.json({ limit: '10kb' }));
 app.use(express.static(path.join(__dirname, 'public')));
+
+app.use(
+  '/api/fetch',
+  rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 5,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many requests. Please wait 15 minutes before trying again.' }
+  })
+);
 
 app.get('/api/status', (req, res) => {
   res.json({ configured: Boolean(process.env.APIFY_TOKEN) });
