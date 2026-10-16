@@ -5,6 +5,7 @@ const { rateLimit } = require('express-rate-limit');
 const fetch = require('node-fetch');
 const cors = require('cors');
 const path = require('path');
+const { randomBytes } = require('crypto');
 const { Transform } = require('stream');
 
 const app = express();
@@ -210,7 +211,8 @@ app.get('/api/download', async (req, res) => {
     }
 
     const extension = type === 'video' ? 'mp4' : 'jpg';
-    res.setHeader('Content-Disposition', `attachment; filename="instagram.${extension}"`);
+    const filename = `instagram-${Date.now()}-${randomBytes(6).toString('hex')}.${extension}`;
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.setHeader('Content-Type', contentType);
 
     let bytesSent = 0;
